@@ -1,0 +1,46 @@
+# Maven
+**/target/
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.class
+*.log
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+
+# Docker
+docker-compose.override.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+**/var/lib/gephub/
+**/recordings/
+**/media/
+**/builder-projects/
+**/deployments/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+

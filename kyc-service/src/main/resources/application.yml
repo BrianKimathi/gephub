@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: gephub-kyc-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:gephub_kyc}
+    username: ${DB_USER:gephub}
+    password: ${DB_PASSWORD:gephub}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl: false
+
+  servlet:
+    multipart:
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:50MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:100MB}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      show-details: when_authorized
+
+gephub:
+  jwt:
+    issuer: ${JWT_ISSUER:https://auth.gephub.local}
+    jwks-uri: ${JWT_JWKS_URI:http://localhost:8080/.well-known/jwks.json}
+  storage:
+    root: ${KYC_STORAGE_ROOT:/var/lib/gephub/kyc-media}
+    retentionDays: ${KYC_STORAGE_RETENTION_DAYS:30}
+    quotaPerOrgMb: ${KYC_STORAGE_QUOTA_PER_ORG_MB:1024}
+  amqp:
+    queue: ${KYC_QUEUE:kyc-processing}
+  kyc:
+    workerToken: ${KYC_WORKER_TOKEN:}
+    sessionTtlSeconds: ${KYC_SESSION_TTL_SECONDS:900}
+
+

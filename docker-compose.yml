@@ -1,0 +1,116 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gephub_auth
+      POSTGRES_USER: gephub
+      POSTGRES_PASSWORD: gephub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gephub -d gephub_auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth-service:
+    build:
+      context: ./gephub-auth-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: gephub_auth
+      DB_USER: gephub
+      DB_PASSWORD: gephub
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kyc-service:
+    build:
+      context: ./kyc-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: gephub_kyc
+      DB_USER: gephub
+      DB_PASSWORD: gephub
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_ISSUER: http://auth-service:8080
+      JWT_JWKS_URI: http://auth-service:8080/.well-known/jwks.json
+      KYC_STORAGE_ROOT: /var/lib/gephub/kyc-media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    volumes:
+      - kycmedia:/var/lib/gephub/kyc-media
+
+  kyc-worker:
+    build:
+      context: ./kyc-worker
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      QUEUE_NAME: kyc-processing
+      KYC_SERVICE_BASE_URL: http://kyc-service:8081
+      WORKER_TOKEN: ${KYC_WORKER_TOKEN:-dev-worker-token}
+      MEDIA_ROOT: /var/lib/gephub/kyc-media
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      kyc-service:
+        condition: service_started
+    volumes:
+      - kycmedia:/var/lib/gephub/kyc-media:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  kycmedia:
+
+
