@@ -3,7 +3,9 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 COPY . .
-RUN ./mvnw -q -DskipTests package
+# Ensure Maven wrapper is executable
+RUN chmod +x mvnw \
+    && ./mvnw -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 ENV JAVA_OPTS="-Xms256m -Xmx512m"

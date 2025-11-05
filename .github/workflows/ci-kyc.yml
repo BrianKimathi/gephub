@@ -1,0 +1,46 @@
+name: CI - KYC Service
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'kyc-service/**'
+      - '.github/workflows/ci-kyc.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'kyc-service/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      working-directory: ./kyc-service
+      run: mvn clean package -DskipTests
+    
+    - name: Run tests
+      working-directory: ./kyc-service
+      run: mvn test
+    
+    - name: Build Docker image
+      working-directory: ./kyc-service
+      run: docker build -t kyc-service:latest .
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: kyc-service-image
+        path: kyc-service/Dockerfile
+        retention-days: 1
+

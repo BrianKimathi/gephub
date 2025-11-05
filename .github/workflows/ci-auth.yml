@@ -1,0 +1,49 @@
+name: CI - Auth Service
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'gephub-auth-service/**'
+      - '.github/workflows/ci-auth.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'gephub-auth-service/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      working-directory: ./gephub-auth-service
+      run: mvn clean package -DskipTests
+    
+    - name: Run tests
+      working-directory: ./gephub-auth-service
+      run: mvn test
+    
+    - name: Build Docker image
+      working-directory: ./gephub-auth-service
+      run: docker build -t gephub-auth-service:latest .
+    
+    - name: Save Docker image
+      run: docker save gephub-auth-service:latest | gzip > auth-service-image.tar.gz
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: auth-service-image
+        path: auth-service-image.tar.gz
+        retention-days: 1
+

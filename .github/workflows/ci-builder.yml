@@ -1,0 +1,39 @@
+name: CI - Builder Service
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'builder-service/**'
+      - '.github/workflows/ci-builder.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'builder-service/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      working-directory: ./builder-service
+      run: mvn clean package -DskipTests
+    
+    - name: Run tests
+      working-directory: ./builder-service
+      run: mvn test
+    
+    - name: Build Docker image
+      working-directory: ./builder-service
+      run: docker build -t builder-service:latest .
+
