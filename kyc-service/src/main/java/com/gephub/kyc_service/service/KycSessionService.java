@@ -89,9 +89,10 @@ public class KycSessionService {
             java.util.List<String> prompts;
             try {
                 var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(s.getChallengeScript());
-                prompts = new java.util.ArrayList<>();
                 if (node.has("prompts") && node.get("prompts").isArray()) {
-                    node.get("prompts").forEach(n -> prompts.add(n.asText()));
+                    java.util.List<String> list = new java.util.ArrayList<>();
+                    node.get("prompts").forEach(n -> list.add(n.asText()));
+                    prompts = list;
                 } else {
                     prompts = java.util.List.of("look_left","look_right","look_up","look_down");
                 }
